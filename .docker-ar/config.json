@@ -1,0 +1,6 @@
+{
+	"auths": {
+		"asia-southeast2-docker.pkg.dev": {}
+	},
+	"credsStore": "osxkeychain"
+}

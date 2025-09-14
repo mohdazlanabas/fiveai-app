@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>AI Five-Check</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="/static/styles.css?v=3" />
+</head>
+<body>
+  <div class="wrap">
+    <h1>Ask once. Compare five GPT simultaneously.</h1>
+
+    <form id="ask-form">
+      <input type="text" id="prompt" name="prompt" placeholder="Type your question…" required />
+      <button type="submit">Ask</button>
+    </form>
+
+    <div id="results" class="grid"></div>
+  </div>
+
+  <!-- FOOTNOTE: always visible even if JS fails -->
+  <footer class="footnote" id="footnote">
+    <div>
+      <strong>TIME:</strong> <span id="fn-time">--:--</span> |
+      <strong>DATE:</strong> <span id="fn-date">--/--/----</span> |
+      <strong>LOCATION:</strong> <span id="fn-loc">Unknown</span> |
+      <strong>DEVELOPED BY NET1IO.COM</strong>
+    </div>
+  </footer>
+
+  <script>
+    // Populate time/date immediately
+    function setTimeDate() {
+      const now = new Date();
+      document.getElementById("fn-time").textContent = now.toLocaleTimeString();
+      document.getElementById("fn-date").textContent = now.toLocaleDateString();
+    }
+    setTimeDate();
+    // keep fresh each minute
+    setInterval(setTimeDate, 60_000);
+
+    // Optional: try geolocation (will fallback silently)
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => {
+          const loc = `Lat ${coords.latitude.toFixed(2)}, Lng ${coords.longitude.toFixed(2)}`;
+          document.getElementById("fn-loc").textContent = loc;
+        },
+        () => { /* user denied — leave default */ }
+      );
+    }
+
+    // Form handler (unchanged)
+    const form = document.getElementById("ask-form");
+    const results = document.getElementById("results");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      results.innerHTML = "<div class='loading'>Asking models…</div>";
+
+      const fd = new FormData(form);
+      const res = await fetch("/ask", { method: "POST", body: fd });
+      const data = await res.json();
+
+      results.innerHTML = "";
+      data.forEach(item => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="card-head">
+            <div class="provider"><b>${item.provider.toUpperCase()}</b></div>
+            <div class="meta"><b>${item.model.toUpperCase()}</b> • ${item.latency_ms} ms ${!item.ok ? " • ERROR" : ""}</div>
+          </div>
+          <pre class="answer">${escapeHtml(item.text || "")}</pre>
+        `;
+        results.appendChild(card);
+      });
+    });
+
+    function escapeHtml(str){
+      return str.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+    }
+  </script>
+</body>
+</html>
+
