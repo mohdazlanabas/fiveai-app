@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import httpx
 
-OPENROUTER_API_KEY = os.getenv(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, "").strip()
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "").strip()
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 MODELS = [
