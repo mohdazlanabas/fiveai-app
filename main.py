@@ -1,28 +1,35 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Form
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 import os
 
+# Create FastAPI app
 app = FastAPI()
 
+# Mount static folder (for CSS, JS, images)
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Set up templates folder
+templates = Jinja2Templates(directory="templates")
+
+
+# Root endpoint → renders index.html
 @app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    return """
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>FiveAI App</title>
-        <link rel="stylesheet" href="/static/styles.css">
-      </head>
-      <body>
-        <h1>🚀 FiveAI App is running on Cloud Run!</h1>
-        <p>This app is served with FastAPI + Uvicorn.</p>
-      </body>
-    </html>
-    """
+async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
-# This allows local testing and Cloud Run deployment
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.environ.get("PORT", 8080))  # Cloud Run injects PORT
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
 
+# Example form handler (if your index.html has a form)
+@app.post("/submit", response_class=HTMLResponse)
+async def handle_form(request: Request, user_input: str = Form(...)):
+    return templates.TemplateResponse(
+        "index.html",
+        {"request": request, "message": f"You submitted: {user_input}"}
+    )
+
+
+# Simple health check
+@app.get("/healthz")
+async def health_check():
+    return {"status": "ok"}
